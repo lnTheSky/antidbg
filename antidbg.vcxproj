@@ -29,6 +29,7 @@
     <ClCompile Include="antidebug\asm\dbgbreak.c" />
     <ClCompile Include="antidebug\asm\int2d.c" />
     <ClCompile Include="antidebug\asm\int3.c" />
+    <ClCompile Include="antidebug\asm\lbr_btf.c" />
     <ClCompile Include="antidebug\asm\movss.c" />
     <ClCompile Include="antidebug\asm\popf.c" />
     <ClCompile Include="antidebug\asm\prehop.c" />
@@ -55,6 +56,7 @@
     <ClCompile Include="antidebug\flags\prochpforceflag.c" />
     <ClCompile Include="antidebug\flags\timing.c" />
     <ClCompile Include="antidebug\flags\window.c" />
+    <ClCompile Include="antidebug\memory\dbgp.c" />
     <ClCompile Include="antidebug\memory\hwbreakp.c" />
     <ClCompile Include="antidebug\memory\membreakp.c" />
     <ClCompile Include="antidebug\memory\peb.c" />
@@ -77,6 +79,7 @@
     <ClInclude Include="antidebug\asm\dbgbreak.h" />
     <ClInclude Include="antidebug\asm\int2d.h" />
     <ClInclude Include="antidebug\asm\int3.h" />
+    <ClInclude Include="antidebug\asm\lbr_btf.h" />
     <ClInclude Include="antidebug\asm\movss.h" />
     <ClInclude Include="antidebug\asm\popf.h" />
     <ClInclude Include="antidebug\asm\prehop.h" />
@@ -105,6 +108,7 @@
     <ClInclude Include="antidebug\flags\prochpforceflag.h" />
     <ClInclude Include="antidebug\flags\timing.h" />
     <ClInclude Include="antidebug\flags\window.h" />
+    <ClInclude Include="antidebug\memory\dbgp.h" />
     <ClInclude Include="antidebug\memory\hwbreakp.h" />
     <ClInclude Include="antidebug\memory\membreakp.h" />
     <ClInclude Include="antidebug\memory\peb.h" />
@@ -146,7 +150,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">

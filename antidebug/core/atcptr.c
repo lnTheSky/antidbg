@@ -168,7 +168,7 @@ bool StartAttachProtection(void)
             patch[11] = 0xE0;
 
             SIZE_T bytesWritten;
-            WriteProcessMemory(GetCurrentProcess(), pDbgUiRemoteBreakin, patch, sizeof(patch), &bytesWritten);
+            WriteProcessMemory((HANDLE)(-1LL), pDbgUiRemoteBreakin, patch, sizeof(patch), &bytesWritten);
             VirtualProtect(pDbgUiRemoteBreakin, 6, oldProtect, &oldProtect);
         }
     }
@@ -179,7 +179,7 @@ bool StartAttachProtection(void)
         if (VirtualProtect(pDbgBreakPoint, 1, PAGE_EXECUTE_READWRITE, &dwOldProtect))
         {
             unsigned char patch[] = { 0xC3 }; // ret
-            WriteProcessMemory(GetCurrentProcess(), pDbgBreakPoint, patch, sizeof(patch), NULL);
+            WriteProcessMemory((HANDLE)(-1LL), pDbgBreakPoint, patch, sizeof(patch), NULL);
             VirtualProtect(pDbgBreakPoint, 1, dwOldProtect, &dwOldProtect);
         }
     }

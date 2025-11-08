@@ -4,13 +4,13 @@ antidbg is a PoC of a x64 user-mode anti-debugging library for Windows, designed
 
 The library is:
 - Very easy to use (only one function call required)
-- Directly syscalled, which means that most antidebugging checks can't be hooked/intercepted from user-mode
+- Directly syscalled, which means that most antidebugging checks can't be hooked from user-space
 - Optimized for officially supported Windows versions and AMD64 only.
 - Designed for speed and minimal memory usage
 - Compatible with any C and C++ standard
 
 ## Features
-**__1.__** Able to bypass thread creation hooking and hide user-mode threads from debuggers.
+**__1.__** Able to bypass thread creation hooking and hide user-land threads from debuggers.
 
 **__2.__** Able to detect debuggers with more than 30 different tricks:
   - 1: IsBeingDebugged
@@ -48,6 +48,8 @@ The library is:
   - 33: Window analysis
   - 34: Thread start address
   - 35: Parent process 
+  - 36: Firmware (ACPI) checks
+  - 37: Kernel debugger checks with LBR/BTF
 
 **__3.__** Able to detect unusual memory writes by other analysis tools like sandboxes.
 

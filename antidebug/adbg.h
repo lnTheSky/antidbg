@@ -1,5 +1,7 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+
 #include "core\thrmng.h"
 #include "core\atcptr.h"
 #include "core\hasher.h"
@@ -18,6 +20,7 @@
 #include "asm\sckreg.h"
 #include "asm\prehop.h"
 #include "asm\popf.h"
+#include "asm\lbr_btf.h"
 
 #include "exceptions\raiseexc.h"
 #include "exceptions\hwbreakp2.h"
@@ -39,6 +42,7 @@
 #include "memory\peb.h"
 #include "memory\vrtalloc.h"
 #include "memory\membreakp.h"
+#include "memory\dbgp.h"
 
 #include "object\clshandle.h"
 #include "object\dbgobj.h"

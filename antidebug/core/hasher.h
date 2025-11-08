@@ -8,13 +8,15 @@
 #include <intrin.h>
 #include <stdbool.h>
 #include <bcrypt.h>
-#pragma comment(lib, "bcrypt.lib")
 
+#pragma comment(lib, "bcrypt.lib")
 #pragma comment(lib, "psapi.lib")
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+    #define SystemTimeSlipInformation 0x2E
 
     typedef struct {
         HMODULE hMod;

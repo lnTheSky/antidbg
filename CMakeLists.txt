@@ -26,7 +26,7 @@ file(GLOB_RECURSE ADBG_SOURCES
     "${CMAKE_SOURCE_DIR}/object/*.c"
 )
 
-if (ADBG_SOURCES STREQUAL "")
+if (NOT ADBG_SOURCES)
     message(FATAL_ERROR "No C sources found. Make sure this CMakeLists.txt is at project root.")
 endif()
 
@@ -74,6 +74,13 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/
     FILES_MATCHING PATTERN "*.h"
 )
 
+# Determine readable lib type string for summary
+if(BUILD_SHARED_LIBS)
+    set(LIB_TYPE "shared")
+else()
+    set(LIB_TYPE "static")
+endif()
+
 # Helpful summary
-message(STATUS "antidebug: building ${BUILD_SHARED_LIBS?\"shared\" : \"static\"} library for x64")
+message(STATUS "antidebug: building ${LIB_TYPE} library for x64")
 message(STATUS "Sources: ${ADBG_SOURCES}")

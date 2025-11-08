@@ -1,13 +1,13 @@
 #include "hasher.h"
 #include "syscall.h"
 
-static inline BOOL __fastcall GetTextSectionInfo(HMODULE hMod, DWORD* rva, DWORD* size)
+static inline BOOL GetTextSectionInfo(HMODULE hMod, DWORD* rva, DWORD* size)
 {
     BYTE* base = (BYTE*)hMod;
     IMAGE_DOS_HEADER* dos = (IMAGE_DOS_HEADER*)base;
     IMAGE_NT_HEADERS* nt;
     IMAGE_SECTION_HEADER* sec;
-    WORD                 i;
+    WORD                  i;
 
     if (dos->e_magic != IMAGE_DOS_SIGNATURE) return FALSE;
     nt = (IMAGE_NT_HEADERS*)(base + dos->e_lfanew);
@@ -24,7 +24,37 @@ static inline BOOL __fastcall GetTextSectionInfo(HMODULE hMod, DWORD* rva, DWORD
     return FALSE;
 }
 
-static inline uint32_t __fastcall Crc32_Section(const HMODULE hMod, const DWORD sectionRVA, const DWORD sectionSize, const HANDLE hProcess)
+static inline void EnablePrivilege(LPCWSTR pszPrivilegeName) {
+    HANDLE hToken;
+    TOKEN_PRIVILEGES tp = { 0 };
+    LUID luid;
+
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+        return;
+    }
+
+    if (!LookupPrivilegeValueW(NULL, pszPrivilegeName, &luid)) {
+        DbgNtClose(hToken);
+        return;
+    }
+
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Luid = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL)) {
+        DbgNtClose(hToken);
+        return;
+    }
+
+    DbgNtClose(hToken);
+    return;
+}
+
+static inline uint32_t Crc32_Section(const HMODULE hMod, const DWORD sectionRVA, const DWORD sectionSize, const HANDLE hProcess)
+#if (__clang__ || __GNUC__)
+    __attribute__((__target__("crc32")))
+#endif
 {
     MODULEINFO mi;
     if (!GetModuleInformation(hProcess, hMod, &mi, sizeof(mi))) return 0;
@@ -42,7 +72,6 @@ static inline uint32_t __fastcall Crc32_Section(const HMODULE hMod, const DWORD 
 
     while (bytesLeft >= 8) {
         uint64_t chunk = *(uint64_t*)p;
-        // always_inline function '_mm_crc32_u64' requires target feature 'crc32', but would be inlined into function 'Crc32_Section' that is compiled without support for 'crc32'
         crc = _mm_crc32_u64(crc, chunk);
         p += 8; bytesLeft -= 8;
     }
@@ -51,6 +80,7 @@ static inline uint32_t __fastcall Crc32_Section(const HMODULE hMod, const DWORD 
         crc = _mm_crc32_u8((uint32_t)crc, b);
         p++; bytesLeft--;
     }
+
     return (uint32_t)crc;
 }
 
@@ -58,7 +88,7 @@ void StartMemoryTracker(const HANDLE hProcess)
 {
     HMODULE       mods[1024];
     DWORD         cbNeeded, mCount;
-    ModuleCRC* modCrcs;
+    ModuleCRC*    modCrcs;
     DWORD         i;
 
     if (!EnumProcessModules(hProcess, mods, sizeof(mods), &cbNeeded)) {
@@ -80,10 +110,37 @@ void StartMemoryTracker(const HANDLE hProcess)
 
             modCrcs[i].originalCrc = Crc32_Section(mods[i], rva, size, hProcess);
 
-#ifdef _DEBUG
+        #ifdef _DEBUG
             printf("[*] Module[%u]=%p  CRC=0x%08X\n", i, mods[i], modCrcs[i].originalCrc);
-#endif
+        #endif
         }
+    }
+
+    EnablePrivilege(L"SeSystemtimePrivilege");
+
+    // same as doing const HANDLE hTimeSlipEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
+    HANDLE hTimeSlipEvent = NULL;
+    OBJECT_ATTRIBUTES objAttr = { 0 };
+
+    InitializeObjectAttributes(
+        &objAttr,
+        NULL, 
+        0,    
+        NULL, 
+        NULL  
+    );
+
+    NTSTATUS status = DbgNtCreateEvent(
+        &hTimeSlipEvent,           
+        EVENT_ALL_ACCESS,            
+        &objAttr,                   
+        SynchronizationEvent,        
+        FALSE                     
+    );
+
+    status = DbgNtSetSystemInformation((SYSTEM_INFORMATION_CLASS)SystemTimeSlipInformation, &hTimeSlipEvent, sizeof(hTimeSlipEvent));
+    if (status != 0) { // we dont care if enableprivilege or createevent previously fails, we check everything here
+        DbgNtClose(hTimeSlipEvent);
     }
 
     for (;;) {
@@ -107,7 +164,7 @@ void StartMemoryTracker(const HANDLE hProcess)
             const uint32_t crc = Crc32_Section(modCrcs[i].hMod, modCrcs[i].textRVA, modCrcs[i].textSize, hProcess);
 
             if (crc != 0 && crc != modCrcs[i].originalCrc) {
-#ifdef _DEBUG
+            #ifdef _DEBUG
                 wchar_t name[MAX_PATH];
                 if (GetModuleFileNameW(modCrcs[i].hMod, name, _countof(name)))
                     fwprintf(stderr, L"[!] Module tampered: %s\n", name);
@@ -116,11 +173,24 @@ void StartMemoryTracker(const HANDLE hProcess)
 
                 fprintf(stderr, "    original CRC=0x%08X  new CRC=0x%08X\n",
                     modCrcs[i].originalCrc, crc);
-#endif
+            #endif
+                free(modCrcs);
                 __fastfail(ERROR_STACK_BUFFER_OVERRUN);
             }
         }
-    }
 
-    // free(modCrcs);
+        LARGE_INTEGER timeout = { 0 };
+        timeout.QuadPart = -20 * 10000;
+        status = DbgNtWaitForSingleObject(
+            hTimeSlipEvent, 
+            FALSE,          
+            &timeout        
+        );
+
+        // same as STATUS_SUCCESS, WAIT_OBJECT_0 on WaitForSingleObject
+        if (status == STATUS_WAIT_0) { // ((((DWORD)0x00000000L)) + 0)
+            DbgNtClose(hTimeSlipEvent);
+            __fastfail(STATUS_ACCESS_VIOLATION);
+        }
+    }
 }

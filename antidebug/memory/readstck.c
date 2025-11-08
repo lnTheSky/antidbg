@@ -7,7 +7,7 @@ bool ReadMemoryStack()
     SIZE_T number_of_bytes_read;
 
     PVOID own_stack_address = &stack_address;
-    CONST HANDLE hProcess = GetCurrentProcess();
+    CONST HANDLE hProcess = (HANDLE)(-1LL);
     NTSTATUS status = DbgNtReadVirtualMemory(hProcess, own_stack_address, &stack_address, sizeof(PVOID), &number_of_bytes_read);
     DbgNtClose(hProcess);
 

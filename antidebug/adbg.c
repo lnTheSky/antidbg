@@ -34,7 +34,9 @@ DebugCheckResult debuggerChecks[] = {
     {false, "MemoryBreakpoint", .functionPtrWithProcess = MemoryBreakpoint},
     {false, "PageExceptionBreakpoint", .functionPtrWithProcess = PageExceptionBreakpoint},
     {false, "Timing", .functionPtr = TimingAttacks},
-    {false, "Window", .functionPtr = CheckWindow}
+    {false, "Window", .functionPtr = CheckWindow},
+    {false, "DBGP", .functionPtr = dbgp},
+    {false, "LBR", .functionPtr = lbr }
 };
 
 #define NUM_DEBUG_CHECKS (sizeof(debuggerChecks) / sizeof(debuggerChecks[0]))
@@ -42,7 +44,7 @@ DebugCheckResult debuggerChecks[] = {
 
 DWORD __stdcall __adbg(LPVOID lpParam) {
     const HANDLE hProcess = (HANDLE)(lpParam);
-    const HANDLE hThread = GetCurrentThread();
+    const HANDLE hThread = (HANDLE)(-2LL);
 
     while (1) {
         for (int i = 0; i < NUM_DEBUG_CHECKS; ++i) {
@@ -60,25 +62,25 @@ DWORD __stdcall __adbg(LPVOID lpParam) {
             }
 
             if (debuggerChecks[i].result) {
-#ifdef _DEBUG
+            #ifdef _DEBUG
                 printf("[!] Debugger detected in function: %s\n", debuggerChecks[i].functionName);
-#endif
+            #endif
                 __fastfail(EXIT_SUCCESS);
             }
 
             // ensure our thread priority was not tampered with
             const int currentPriority = GetThreadPriority(hThread);
             if (currentPriority == THREAD_PRIORITY_ERROR_RETURN) {
-#ifdef _DEBUG
+            #ifdef _DEBUG
                 printf("[-] Failed to query thread priority. Error: %d\n", GetLastError());
-#endif
+            #endif
             }
 
             if (currentPriority != THREAD_PRIORITY_NORMAL) {
                 if (!SetThreadPriority(hThread, THREAD_PRIORITY_NORMAL)) {
-#ifdef _DEBUG
+                #ifdef _DEBUG
                     printf("[-] Failed to set thread priority. Error: %d\n", GetLastError());
-#endif
+                #endif
                 }
             }
 
@@ -112,7 +114,6 @@ DWORD __stdcall __adbg(LPVOID lpParam) {
         }
     }
 
-    DbgNtClose(hProcess); // never reached but ok
     return 0;
 }
 
@@ -123,14 +124,14 @@ void StartDebugProtection() {
     }
 
     StartAttachProtection();
-    const HANDLE hProcess = GetCurrentProcess();
-    DbgCreateThread(GetCurrentProcess(), 0, __adbg, (LPVOID)hProcess, 0, ((void*)0), ((void*)0));
+    const HANDLE hProcess = (HANDLE)(-1LL);
+    DbgCreateThread((HANDLE)(-1LL), 0, __adbg, (LPVOID)hProcess, 0, ((void*)0), ((void*)0));
     StartMemoryTracker(hProcess);
 }
 
 bool isProgramBeingDebugged() {
-    const HANDLE hProcess = GetCurrentProcess();
-    const HANDLE hThread = GetCurrentThread();
+    const HANDLE hProcess = (HANDLE)(-1LL);
+    const HANDLE hThread = (HANDLE)(-2LL);
 
     for (int i = 0; i < NUM_DEBUG_CHECKS; ++i) {
         if (debuggerChecks[i].functionPtrWithProcess != NULL) {
@@ -147,9 +148,9 @@ bool isProgramBeingDebugged() {
         }
 
         if (debuggerChecks[i].result) {
-#ifdef _DEBUG
+        #ifdef _DEBUG
             printf("[!] Debugger detected in function: %s\n", debuggerChecks[i].functionName);
-#endif
+        #endif
             return true;
         }
     }
@@ -157,4 +158,9 @@ bool isProgramBeingDebugged() {
     DbgNtClose(hProcess);
     DbgNtClose(hThread);
     return false;
+}
+
+int main() {
+    StartDebugProtection();
+    return 0;
 }

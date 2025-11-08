@@ -186,6 +186,12 @@
     <ClCompile Include="antidebug\flags\job.c">
       <Filter>Source Files\flags</Filter>
     </ClCompile>
+    <ClCompile Include="antidebug\memory\dbgp.c">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="antidebug\asm\lbr_btf.c">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="antidebug\api\dbgpresent.h">
@@ -322,6 +328,12 @@
     </ClInclude>
     <ClInclude Include="antidebug\core\nttypes.h">
       <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="antidebug\memory\dbgp.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="antidebug\asm\lbr_btf.h">
+      <Filter>Header Files\asm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
