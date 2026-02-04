@@ -123,10 +123,14 @@ void StartDebugProtection() {
         __fastfail(STATUS_ACCESS_VIOLATION);
     }
 
+    // WRITES MEMORY
     StartAttachProtection();
+    
     const HANDLE hProcess = (HANDLE)(-1LL);
     DbgCreateThread((HANDLE)(-1LL), 0, __adbg, (LPVOID)hProcess, 0, ((void*)0), ((void*)0));
-    StartMemoryTracker(hProcess);
+    
+    // Execution stuck here, also, we DO NOT want to read any memory
+    //StartMemoryTracker(hProcess);
 }
 
 bool isProgramBeingDebugged() {
@@ -160,7 +164,7 @@ bool isProgramBeingDebugged() {
     return false;
 }
 
-int main() {
-    StartDebugProtection();
-    return 0;
-}
+//int main() {
+//    StartDebugProtection();
+//    return 0;
+//}
